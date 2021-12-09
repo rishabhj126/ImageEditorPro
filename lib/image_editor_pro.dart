@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
@@ -7,18 +8,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:image_editor_pro/modules/sliders.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:image_editor_pro/modules/all_emojies.dart';
 import 'package:image_editor_pro/modules/bottombar_container.dart';
 import 'package:image_editor_pro/modules/emoji.dart';
+import 'package:image_editor_pro/modules/sliders.dart';
 import 'package:image_editor_pro/modules/text.dart';
 import 'package:image_editor_pro/modules/textview.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:signature/signature.dart';
-import 'package:firexcode/firexcode.dart';
-import 'dart:math' as math;
 
 import 'modules/color_filter_generator.dart';
 import 'modules/colors_picker.dart'; // import this
@@ -27,21 +26,22 @@ TextEditingController heightcontroler = TextEditingController();
 TextEditingController widthcontroler = TextEditingController();
 var width = 300;
 var height = 300;
-List<Map> widgetJson = [];
+List<Map?> widgetJson = [];
 //List fontsize = [];
 //List<Color> colorList = [];
 var howmuchwidgetis = 0;
 //List multiwidget = [];
 Color currentcolors = Colors.white;
 var opicity = 0.0;
-SignatureController _controller = SignatureController(penStrokeWidth: 5, penColor: Colors.green);
+SignatureController _controller =
+    SignatureController(penStrokeWidth: 5, penColor: Colors.green);
 
 class ImageEditorPro extends StatefulWidget {
-  final Color appBarColor;
-  final Color bottomBarColor;
-  final Directory pathSave;
-  final File defaultImage;
-  final double pixelRatio;
+  final Color? appBarColor;
+  final Color? bottomBarColor;
+  final Directory? pathSave;
+  final File? defaultImage;
+  final double? pixelRatio;
 
   ImageEditorPro({
     this.appBarColor,
@@ -66,7 +66,8 @@ class _ImageEditorProState extends State<ImageEditorPro> {
   void changeColor(Color color) {
     setState(() => pickerColor = color);
     var points = _controller.points;
-    _controller = SignatureController(penStrokeWidth: 5, penColor: color, points: points);
+    _controller =
+        SignatureController(penStrokeWidth: 5, penColor: color, points: points);
   }
 
   List<Offset> offsets = [];
@@ -74,20 +75,20 @@ class _ImageEditorProState extends State<ImageEditorPro> {
   Offset offset2 = Offset.zero;
   final scaf = GlobalKey<ScaffoldState>();
   var openbottomsheet = false;
-  List<Offset> _points = <Offset>[];
+  List<Offset?> _points = <Offset?>[];
   List type = [];
   List aligment = [];
 
   final GlobalKey container = GlobalKey();
   final GlobalKey globalKey = GlobalKey();
-  File _image;
+  File? _image;
   ScreenshotController screenshotController = ScreenshotController();
-  Timer timeprediction;
+  late Timer timeprediction;
 
   void timers() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.defaultImage != null && widget.defaultImage.existsSync()) {
-        loadImage(widget.defaultImage);
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      if (widget.defaultImage != null && widget.defaultImage!.existsSync()) {
+        loadImage(widget.defaultImage!);
       }
     });
     Timer.periodic(Duration(milliseconds: 10), (tim) {
@@ -131,150 +132,38 @@ class _ImageEditorProState extends State<ImageEditorPro> {
 
   @override
   Widget build(BuildContext context) {
-    return Screenshot(
-      controller: screenshotController,
-      child: RotatedBox(
-        quarterTurns: rotateValue,
-        child: imageFilterLatest(
-          hue: hueValue,
-          brightness: brightnessValue,
-          saturation: saturationValue,
-          child: RepaintBoundary(
-              key: globalKey,
-              child: xStack.list(
-                [
-                  _image != null
-                      ? Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.rotationY(flipValue),
-                          child: ClipRect(
-                            // <-- clips to the 200x200 [Container] below
-
-                            child: _image.path.decorationIFToFitHeight().xContainer(
-                                padding: EdgeInsets.zero,
-                                // alignment: Alignment.center,
-                                width: width.toDouble(),
-                                height: height.toDouble(),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                    sigmaX: blurValue,
-                                    sigmaY: blurValue,
-                                  ),
-                                  child: Container(
-                                    color: colorValue.withOpacity(opacityValue),
-                                  ),
-                                )),
-                          ),
-                        )
-
-                      //  BackdropFilter(
-                      //     filter: ImageFilter.blur(
-                      //         sigmaX: 10.0, sigmaY: 10.0, tileMode: TileMode.clamp),
-                      //     child: Image.file(
-                      //       _image,
-                      //       height: height.toDouble(),
-                      //       width: width.toDouble(),
-                      //       fit: BoxFit.cover,
-                      //     ),
-                      //   )
-                      : Container(),
-                  Signat().xGesture(
-                    onPanUpdate: (DragUpdateDetails details) {
-                      setState(() {
-                        RenderBox object = context.findRenderObject();
-                        var _localPosition = object.globalToLocal(details.globalPosition);
-                        _points = List.from(_points)..add(_localPosition);
-                      });
-                    },
-                    onPanEnd: (DragEndDetails details) {
-                      _points.add(null);
-                    },
-                  ).xContainer(padding: EdgeInsets.all(0.0)),
-                  xStack.list(
-                    widgetJson.asMap().entries.map((f) {
-                      return type[f.key] == 1
-                          ? EmojiView(
-                              left: offsets[f.key].dx,
-                              top: offsets[f.key].dy,
-                              ontap: () {
-                                scaf.currentState.showBottomSheet((context) {
-                                  return Sliders(
-                                    index: f.key,
-                                    mapValue: f.value,
-                                  );
-                                });
-                              },
-                              onpanupdate: (details) {
-                                setState(() {
-                                  offsets[f.key] =
-                                      Offset(offsets[f.key].dx + details.delta.dx, offsets[f.key].dy + details.delta.dy);
-                                });
-                              },
-                              mapJson: f.value,
-                            )
-                          : type[f.key] == 2
-                              ? TextView(
-                                  left: offsets[f.key].dx,
-                                  top: offsets[f.key].dy,
-                                  ontap: () {
-                                    showModalBottomSheet(
-                                        shape: BorderRadius.only(topRight: Radius.circular(10), topLeft: Radius.circular(10))
-                                            .xShapeBorder(),
-                                        context: context,
-                                        builder: (context) {
-                                          return Sliders(
-                                            index: f.key,
-                                            mapValue: f.value,
-                                          );
-                                        });
-                                  },
-                                  onpanupdate: (details) {
-                                    setState(() {
-                                      offsets[f.key] =
-                                          Offset(offsets[f.key].dx + details.delta.dx, offsets[f.key].dy + details.delta.dy);
-                                    });
-                                  },
-                                  mapJson: f.value,
-                                )
-                              : Container();
-                    }).toList(),
-                  )
-                ],
-              )).toContainer(
-            margin: EdgeInsets.all(20),
-            color: Colors.white,
-            width: width.toDouble(),
-            height: height.toDouble(),
-          ),
-        ),
-      ),
-    ).xCenter().xScaffold(
-        backgroundColor: Colors.grey.shade400,
-        key: scaf,
-        appBar: AppBar(
-          actions: <Widget>[
-            Icon(FontAwesomeIcons.boxes).xIconButton(onPressed: () {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade400,
+      key: scaf,
+      appBar: AppBar(
+        actions: <Widget>[
+          IconButton(
+            onPressed: () {
               showCupertinoDialog(
                   context: context,
                   builder: (context) {
                     return AlertDialog(
-                      title: 'Select Height Width'.text(),
+                      title: Text('Select Height Width'),
                       actions: <Widget>[
-                        () {
-                          setState(() {
-                            height = int.parse(heightcontroler.text);
-                            width = int.parse(widthcontroler.text);
-                          });
-                          heightcontroler.clear();
-                          widthcontroler.clear();
-                          Navigator.pop(context);
-                        }.xFlatButton(child: 'Done'.text()),
+                        FlatButton(
+                            onPressed: () {
+                              setState(() {
+                                height = int.parse(heightcontroler.text);
+                                width = int.parse(widthcontroler.text);
+                              });
+                              heightcontroler.clear();
+                              widthcontroler.clear();
+                              Navigator.pop(context);
+                            },
+                            child: Text('Done')),
                       ],
                       content: SingleChildScrollView(
-                        child: xColumnSS.list(
-                          [
-                            'Define Height'.text(),
-                            10.0.sizedHeight(),
+                        child: Column(
+                          children: [
+                            Text('Define Height'),
+                            SizedBox(
+                              height: 10,
+                            ),
                             TextField(
                                 controller: heightcontroler,
                                 keyboardType: TextInputType.numberWithOptions(),
@@ -282,9 +171,9 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                     hintText: 'Height',
                                     contentPadding: EdgeInsets.only(left: 10),
                                     border: OutlineInputBorder())),
-                            10.0.sizedHeight(),
-                            'Define Width'.text(),
-                            10.0.sizedHeight(),
+                            SizedBox(height: 10),
+                            Text('Define Width'),
+                            SizedBox(height: 10),
                             TextField(
                                 controller: widthcontroler,
                                 keyboardType: TextInputType.numberWithOptions(),
@@ -297,40 +186,62 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                       ),
                     );
                   });
-            }),
-            Icon(Icons.clear).xIconButton(onPressed: () {
+            },
+            icon: Icon(FontAwesomeIcons.boxes),
+          ),
+          IconButton(
+            onPressed: () {
               _controller.points.clear();
               setState(() {});
-            }),
-            Icon(Icons.camera_alt).xIconButton(onPressed: () {
+            },
+            icon: Icon(Icons.clear),
+          ),
+          IconButton(
+            onPressed: () {
               bottomsheets();
-            }),
-            'Save'.text().xFlatButton(
-                primary: Colors.white,
-                onPressed: () {
-                  screenshotController.capture(pixelRatio: widget.pixelRatio ?? 1.5).then((binaryIntList) async {
-                    //print("Capture Done");
+            },
+            icon: Icon(Icons.camera_alt),
+          ),
+          FlatButton(
+            color: Colors.white,
+            onPressed: () {
+              screenshotController
+                  .capture(pixelRatio: widget.pixelRatio ?? 1.5)
+                  .then((binaryIntList) async {
+                //print("Capture Done");
 
-                    final paths = widget.pathSave ?? await getTemporaryDirectory();
+                final paths = widget.pathSave ?? await getTemporaryDirectory();
 
-                    final file = await File('${paths.path}/' + DateTime.now().toString() + '.jpg').create();
-                    file.writeAsBytesSync(binaryIntList);
-                    Navigator.pop(context, file);
-                  }).catchError((onError) {
-                    print(onError);
-                  });
-                })
-          ],
-          brightness: Brightness.dark,
-          // backgroundColor: Colors.red,
-          backgroundColor: widget.appBarColor ?? Colors.black87,
-        ),
-        bottomNavigationBar: openbottomsheet
-            ? Container()
-            : XListView(
+                final file = await File(
+                        '${paths.path}/' + DateTime.now().toString() + '.jpg')
+                    .create();
+                file.writeAsBytesSync(binaryIntList!);
+                Navigator.pop(context, file);
+              }).catchError((onError) {
+                print(onError);
+              });
+            },
+            child: Text('Save'),
+          )
+        ],
+        brightness: Brightness.dark,
+        // backgroundColor: Colors.red,
+        backgroundColor: widget.appBarColor ?? Colors.black87,
+      ),
+      bottomNavigationBar: openbottomsheet
+          ? Container()
+          : Container(
+              padding: EdgeInsets.all(0.0),
+              decoration: BoxDecoration(boxShadow: [
+                BoxShadow(
+                  blurRadius: 10.9,
+                  color: widget.bottomBarColor!,
+                )
+              ]),
+              height: 70,
+              child: ListView(
                 scrollDirection: Axis.horizontal,
-              ).list(
-                <Widget>[
+                children: <Widget>[
                   BottomBarContainer(
                     colors: widget.bottomBarColor,
                     icons: FontAwesomeIcons.brush,
@@ -340,19 +251,22 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                         context: context,
                         builder: (context) {
                           return AlertDialog(
-                            title: 'Pick a color!'.text(),
-                            content: ColorPicker(
-                              pickerColor: pickerColor,
-                              onColorChanged: changeColor,
-                              showLabel: true,
-                              pickerAreaHeightPercent: 0.8,
-                            ).xSingleChildScroolView(),
+                            title: Text('Pick a color!'),
+                            content: SingleChildScrollView(
+                              child: ColorPicker(
+                                pickerColor: pickerColor,
+                                onColorChanged: changeColor,
+                                showLabel: true,
+                                pickerAreaHeightPercent: 0.8,
+                              ),
+                            ),
                             actions: <Widget>[
-                              'Got it'.text().xFlatButton(
+                              FlatButton(
                                 onPressed: () {
                                   setState(() => currentColor = pickerColor);
-                                  back(context);
+                                  Navigator.pop(context);
                                 },
+                                child: Text('Got it'),
                               )
                             ],
                           );
@@ -365,7 +279,10 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                     colors: widget.bottomBarColor,
                     icons: Icons.text_fields,
                     ontap: () async {
-                      var value = await Navigator.push(context, MaterialPageRoute(builder: (context) => TextEditorImage()));
+                      var value = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => TextEditorImage()));
                       if (value['name'] == null) {
                         print('true');
                       } else {
@@ -415,98 +332,135 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                     icons: Icons.blur_on,
                     ontap: () {
                       showModalBottomSheet(
-                        shape: BorderRadius.only(topRight: Radius.circular(10), topLeft: Radius.circular(10)).xShapeBorder(),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(10),
+                                topLeft: Radius.circular(10))),
                         context: context,
                         builder: (context) {
                           return StatefulBuilder(
                             builder: (context, setS) {
-                              return xColumn.list(
-                                [
-                                  'Slider Filter Color'.toUpperCase().xTextColorWhite().toCenter(),
-                                  Divider(
-
-                                      // height: 1,
-                                      ),
-                                  20.0.sizedHeight(),
-                                  'Slider Color'.xTextColorWhite(),
-                                  //   10.0.sizedHeight(),
-                                  xRowCC.list([
-                                    BarColorPicker(
-                                        width: 300,
-                                        thumbColor: Colors.white,
-                                        cornerRadius: 10,
-                                        pickMode: PickMode.Color,
-                                        colorListener: (int value) {
-                                          setS(() {
-                                            setState(() {
-                                              colorValue = Color(value);
-                                            });
-                                          });
-                                        }).xExpanded(),
-                                    'Reset'.xTextColorWhite().xFlatButton(onPressed: () {
-                                      setState(() {
-                                        setS(() {
-                                          colorValue = Colors.transparent;
-                                        });
-                                      });
-                                    })
-                                  ]),
-                                  5.0.sizedHeight(),
-                                  'Slider Blur'.xTextColorWhite(),
-                                  10.0.sizedHeight(),
-                                  xRow.list([
-                                    Slider(
-                                        activeColor: Colors.white,
-                                        inactiveColor: Colors.grey,
-                                        value: blurValue,
-                                        min: 0.0,
-                                        max: 10.0,
-                                        onChanged: (v) {
-                                          setS(() {
-                                            setState(() {
-                                              blurValue = v;
-                                            });
-                                          });
-                                        }).xExpanded(),
-                                    'Reset'.xTextColorWhite().xFlatButton(onPressed: () {
-                                      setS(() {
-                                        setState(() {
-                                          blurValue = 0.0;
-                                        });
-                                      });
-                                    })
-                                  ]),
-                                  5.0.sizedHeight(),
-                                  'Slider Opacity'.xTextColorWhite(),
-                                  10.0.sizedHeight(),
-                                  xRow.list([
-                                    Slider(
-                                        activeColor: Colors.white,
-                                        inactiveColor: Colors.grey,
-                                        value: opacityValue,
-                                        min: 0.00,
-                                        max: 1.0,
-                                        onChanged: (v) {
-                                          setS(() {
-                                            setState(() {
-                                              opacityValue = v;
-                                            });
-                                          });
-                                        }).xExpanded(),
-                                    'Reset'.xTextColorWhite().xFlatButton(onPressed: () {
-                                      setS(() {
-                                        setState(() {
-                                          opacityValue = 0.0;
-                                        });
-                                      });
-                                    })
-                                  ]),
-                                ],
-                              ).toContainer(
-                                borderRadius: BorderRadius.only(topRight: Radius.circular(10), topLeft: Radius.circular(10)),
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                      topRight: Radius.circular(10),
+                                      topLeft: Radius.circular(10)),
+                                  color: Colors.black87,
+                                ),
                                 padding: EdgeInsets.all(20),
                                 height: 400,
-                                color: Colors.black87,
+                                child: Column(
+                                  children: [
+                                    Center(
+                                      child: Text(
+                                        'Slider Filter Color'.toUpperCase(),
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                    Divider(
+
+                                        // height: 1,
+                                        ),
+                                    SizedBox(height: 20),
+                                    Text('Slider Color',
+                                        style: TextStyle(color: Colors.white)),
+                                    //   SizedBox(height: 10),
+                                    Row(children: [
+                                      Expanded(
+                                        child: BarColorPicker(
+                                            width: 300,
+                                            thumbColor: Colors.white,
+                                            cornerRadius: 10,
+                                            pickMode: PickMode.Color,
+                                            colorListener: (int value) {
+                                              setS(() {
+                                                setState(() {
+                                                  colorValue = Color(value);
+                                                });
+                                              });
+                                            }),
+                                      ),
+                                      FlatButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            setS(() {
+                                              colorValue = Colors.transparent;
+                                            });
+                                          });
+                                        },
+                                        child: Text('Reset',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      )
+                                    ]),
+                                    SizedBox(height: 5),
+                                    Text('Slider Blur',
+                                        style: TextStyle(color: Colors.white)),
+                                    SizedBox(height: 10),
+                                    Row(children: [
+                                      Expanded(
+                                        child: Slider(
+                                            activeColor: Colors.white,
+                                            inactiveColor: Colors.grey,
+                                            value: blurValue,
+                                            min: 0.0,
+                                            max: 10.0,
+                                            onChanged: (v) {
+                                              setS(() {
+                                                setState(() {
+                                                  blurValue = v;
+                                                });
+                                              });
+                                            }),
+                                      ),
+                                      FlatButton(
+                                        onPressed: () {
+                                          setS(() {
+                                            setState(() {
+                                              blurValue = 0.0;
+                                            });
+                                          });
+                                        },
+                                        child: Text('Reset',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      )
+                                    ]),
+                                    SizedBox(height: 5),
+                                    Text('Slider Opacity',
+                                        style: TextStyle(color: Colors.white)),
+                                    SizedBox(height: 10),
+                                    Row(children: [
+                                      Expanded(
+                                        child: Slider(
+                                            activeColor: Colors.white,
+                                            inactiveColor: Colors.grey,
+                                            value: opacityValue,
+                                            min: 0.00,
+                                            max: 1.0,
+                                            onChanged: (v) {
+                                              setS(() {
+                                                setState(() {
+                                                  opacityValue = v;
+                                                });
+                                              });
+                                            }),
+                                      ),
+                                      FlatButton(
+                                        onPressed: () {
+                                          setS(() {
+                                            setState(() {
+                                              opacityValue = 0.0;
+                                            });
+                                          });
+                                        },
+                                        child: Text('Reset',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      )
+                                    ]),
+                                  ],
+                                ),
                               );
                             },
                           );
@@ -533,95 +487,125 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                     icons: Icons.photo,
                     ontap: () {
                       showModalBottomSheet(
-                          shape:
-                              BorderRadius.only(topRight: Radius.circular(10), topLeft: Radius.circular(10)).xShapeBorder(),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(10),
+                                  topLeft: Radius.circular(10))),
                           context: context,
                           builder: (context) {
-                            return StatefulBuilder(
-                              builder: (context, setS) {
-                                return xColumnCC.list([
-                                  5.0.sizedHeight(),
-                                  'Slider Hue'.xTextColorWhite(),
-                                  10.0.sizedHeight(),
-                                  xRow.list([
-                                    Slider(
-                                        activeColor: Colors.white,
-                                        inactiveColor: Colors.grey,
-                                        value: hueValue,
-                                        min: -10.0,
-                                        max: 10.0,
-                                        onChanged: (v) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.only(
+                                      topRight: Radius.circular(10),
+                                      topLeft: Radius.circular(10))),
+                              height: 300,
+                              child: StatefulBuilder(
+                                builder: (context, setS) {
+                                  return Column(children: [
+                                    SizedBox(height: 5),
+                                    Text('Slider Hue',
+                                        style: TextStyle(color: Colors.white)),
+                                    SizedBox(height: 10),
+                                    Row(children: [
+                                      Expanded(
+                                        child: Slider(
+                                            activeColor: Colors.white,
+                                            inactiveColor: Colors.grey,
+                                            value: hueValue,
+                                            min: -10.0,
+                                            max: 10.0,
+                                            onChanged: (v) {
+                                              setS(() {
+                                                setState(() {
+                                                  hueValue = v;
+                                                });
+                                              });
+                                            }),
+                                      ),
+                                      FlatButton(
+                                        onPressed: () {
                                           setS(() {
                                             setState(() {
-                                              hueValue = v;
+                                              blurValue = 0.0;
                                             });
                                           });
-                                        }).xExpanded(),
-                                    'Reset'.xTextColorWhite().xFlatButton(onPressed: () {
-                                      setS(() {
-                                        setState(() {
-                                          blurValue = 0.0;
-                                        });
-                                      });
-                                    })
-                                  ]),
-                                  5.0.sizedHeight(),
-                                  'Slider Saturation'.xTextColorWhite(),
-                                  10.0.sizedHeight(),
-                                  xRow.list([
-                                    Slider(
-                                        activeColor: Colors.white,
-                                        inactiveColor: Colors.grey,
-                                        value: saturationValue,
-                                        min: -10.0,
-                                        max: 10.0,
-                                        onChanged: (v) {
+                                        },
+                                        child: Text('Reset',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      )
+                                    ]),
+                                    SizedBox(height: 5),
+                                    Text('Slider Saturation',
+                                        style: TextStyle(color: Colors.white)),
+                                    SizedBox(height: 10),
+                                    Row(children: [
+                                      Expanded(
+                                        child: Slider(
+                                            activeColor: Colors.white,
+                                            inactiveColor: Colors.grey,
+                                            value: saturationValue,
+                                            min: -10.0,
+                                            max: 10.0,
+                                            onChanged: (v) {
+                                              setS(() {
+                                                setState(() {
+                                                  saturationValue = v;
+                                                });
+                                              });
+                                            }),
+                                      ),
+                                      FlatButton(
+                                        onPressed: () {
                                           setS(() {
                                             setState(() {
-                                              saturationValue = v;
+                                              saturationValue = 0.0;
                                             });
                                           });
-                                        }).xExpanded(),
-                                    'Reset'.xTextColorWhite().xFlatButton(onPressed: () {
-                                      setS(() {
-                                        setState(() {
-                                          saturationValue = 0.0;
-                                        });
-                                      });
-                                    })
-                                  ]),
-                                  5.0.sizedHeight(),
-                                  'Slider Brightness'.xTextColorWhite(),
-                                  10.0.sizedHeight(),
-                                  xRow.list([
-                                    Slider(
-                                        activeColor: Colors.white,
-                                        inactiveColor: Colors.grey,
-                                        value: brightnessValue,
-                                        min: 0.0,
-                                        max: 1.0,
-                                        onChanged: (v) {
+                                        },
+                                        child: Text('Reset',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      )
+                                    ]),
+                                    SizedBox(height: 5),
+                                    Text('Slider Brightness',
+                                        style: TextStyle(color: Colors.white)),
+                                    SizedBox(height: 10),
+                                    Row(children: [
+                                      Expanded(
+                                        child: Slider(
+                                            activeColor: Colors.white,
+                                            inactiveColor: Colors.grey,
+                                            value: brightnessValue,
+                                            min: 0.0,
+                                            max: 1.0,
+                                            onChanged: (v) {
+                                              setS(() {
+                                                setState(() {
+                                                  brightnessValue = v;
+                                                });
+                                              });
+                                            }),
+                                      ),
+                                      FlatButton(
+                                        onPressed: () {
                                           setS(() {
                                             setState(() {
-                                              brightnessValue = v;
+                                              brightnessValue = 0.0;
                                             });
                                           });
-                                        }).xExpanded(),
-                                    'Reset'.xTextColorWhite().xFlatButton(onPressed: () {
-                                      setS(() {
-                                        setState(() {
-                                          brightnessValue = 0.0;
-                                        });
-                                      });
-                                    })
-                                  ])
-                                ]);
-                              },
-                            ).xContainer(
-                                color: Colors.black87,
-                                height: 300,
-                                borderRadius:
-                                    BorderRadius.only(topRight: Radius.circular(10), topLeft: Radius.circular(10)));
+                                        },
+                                        child: Text('Reset',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      )
+                                    ])
+                                  ]);
+                                },
+                              ),
+                            );
                           });
                     },
                     title: 'Filter',
@@ -649,12 +633,155 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                     title: 'Emoji',
                   ),
                 ],
-              ).xContainer(
-                padding: EdgeInsets.all(0.0),
-                blurRadius: 10.9,
-                shadowColor: widget.bottomBarColor,
-                height: 70,
-              ));
+              ),
+            ),
+      body: Center(
+        child: Screenshot(
+          controller: screenshotController,
+          child: RotatedBox(
+            quarterTurns: rotateValue,
+            child: imageFilterLatest(
+              hue: hueValue,
+              brightness: brightnessValue,
+              saturation: saturationValue,
+              child: RepaintBoundary(
+                  key: globalKey,
+                  child: Container(
+                    margin: EdgeInsets.all(20),
+                    color: Colors.white,
+                    width: width.toDouble(),
+                    height: height.toDouble(),
+                    child: Stack(
+                      children: [
+                        _image != null
+                            ? Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.rotationY(flipValue),
+                                child: ClipRect(
+                                  // <-- clips to the 200x200 [Container] below
+
+                                  child: Container(
+                                      padding: EdgeInsets.zero,
+                                      // alignment: Alignment.center,
+                                      width: width.toDouble(),
+                                      height: height.toDouble(),
+                                      decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                              image: AssetImage(_image!.path))),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(
+                                          sigmaX: blurValue,
+                                          sigmaY: blurValue,
+                                        ),
+                                        child: Container(
+                                          color: colorValue
+                                              .withOpacity(opacityValue),
+                                        ),
+                                      )),
+                                ),
+                              )
+
+                            //  BackdropFilter(
+                            //     filter: ImageFilter.blur(
+                            //         sigmaX: 10.0, sigmaY: 10.0, tileMode: TileMode.clamp),
+                            //     child: Image.file(
+                            //       _image,
+                            //       height: height.toDouble(),
+                            //       width: width.toDouble(),
+                            //       fit: BoxFit.cover,
+                            //     ),
+                            //   )
+                            : Container(),
+                        Container(
+                          padding: EdgeInsets.all(0.0),
+                          child: GestureDetector(
+                            onPanUpdate: (DragUpdateDetails details) {
+                              setState(() {
+                                RenderBox object =
+                                    context.findRenderObject() as RenderBox;
+                                var _localPosition = object
+                                    .globalToLocal(details.globalPosition);
+                                _points = List.from(_points)
+                                  ..add(_localPosition);
+                              });
+                            },
+                            onPanEnd: (DragEndDetails details) {
+                              _points.add(null);
+                            },
+                            child: Signat(),
+                          ),
+                        ),
+                        Stack(
+                          children: widgetJson.asMap().entries.map((f) {
+                            return type[f.key] == 1
+                                ? EmojiView(
+                                    left: offsets[f.key].dx,
+                                    top: offsets[f.key].dy,
+                                    ontap: () {
+                                      scaf.currentState!
+                                          .showBottomSheet((context) {
+                                        return Sliders(
+                                          index: f.key,
+                                          mapValue: f.value,
+                                        );
+                                      });
+                                    },
+                                    onpanupdate: (details) {
+                                      setState(() {
+                                        offsets[f.key] = Offset(
+                                            offsets[f.key].dx +
+                                                details.delta.dx,
+                                            offsets[f.key].dy +
+                                                details.delta.dy);
+                                      });
+                                    },
+                                    mapJson: f.value,
+                                  )
+                                : type[f.key] == 2
+                                    ? TextView(
+                                        left: offsets[f.key].dx,
+                                        top: offsets[f.key].dy,
+                                        ontap: () {
+                                          showModalBottomSheet(
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.only(
+                                                          topRight:
+                                                              Radius.circular(
+                                                                  10),
+                                                          topLeft:
+                                                              Radius.circular(
+                                                                  10))),
+                                              context: context,
+                                              builder: (context) {
+                                                return Sliders(
+                                                  index: f.key,
+                                                  mapValue: f.value,
+                                                );
+                                              });
+                                        },
+                                        onpanupdate: (details) {
+                                          setState(() {
+                                            offsets[f.key] = Offset(
+                                                offsets[f.key].dx +
+                                                    details.delta.dx,
+                                                offsets[f.key].dy +
+                                                    details.delta.dy);
+                                          });
+                                        },
+                                        mapJson: f.value,
+                                      )
+                                    : Container();
+                          }).toList(),
+                        )
+                      ],
+                    ),
+                  )),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   final picker = ImagePicker();
@@ -665,54 +792,74 @@ class _ImageEditorProState extends State<ImageEditorPro> {
     var future = showModalBottomSheet<void>(
       context: context,
       builder: (BuildContext context) {
-        return xColumn.list(
-          [
-            'Select Image Options'.text().xCenter(),
-            10.0.sizedHeight(),
-            Divider(
-              height: 1,
-            ),
-            xRowCC.list(
-              [
-                xColumnCC.list(
-                  [Icon(Icons.photo_library).xIconButton(), 10.0.sizedWidth(), 'Open Gallery'.text()],
-                ).xContainer(
-                  onTap: () async {
-                    var image = await picker.getImage(source: ImageSource.gallery);
-                    await loadImage(File(image.path));
-                    Navigator.pop(context);
-                  },
-                ),
-                24.0.sizedWidth(),
-                xColumnCC.list(
-                  [
-                    Icon(Icons.camera_alt).xIconButton(),
-                    10.0.sizedWidth(),
-                    'Open Camera'.text(),
-                  ],
-                ).xContainer(onTap: () async {
-                  var image = await picker.getImage(source: ImageSource.camera);
-                  var decodedImage = await decodeImageFromList(File(image.path).readAsBytesSync());
-
-                  setState(() {
-                    height = decodedImage.height;
-                    width = decodedImage.width;
-                    _image = File(image.path);
-                  });
-                  setState(() => _controller.clear());
-                  Navigator.pop(context);
-                })
-              ],
-            ).xContainer(
-              padding: EdgeInsets.all(20),
-            )
-          ],
-        ).xContainer(
+        return Container(
           padding: EdgeInsets.all(0.0),
           color: Colors.white,
           //   blurRadius: 10.9,
           //shadowColor: Colors.grey[400],
           height: 170,
+          child: Column(
+            children: [
+              Text(
+                'Select Image Options',
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 10),
+              Divider(
+                height: 1,
+              ),
+              Container(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        var image =
+                            await (picker.getImage(source: ImageSource.gallery)
+                                as FutureOr<PickedFile>);
+                        await loadImage(File(image.path));
+                        Navigator.pop(context);
+                      },
+                      child: Column(
+                        children: [
+                          Icon(Icons.photo_library),
+                          SizedBox(width: 10),
+                          Text('Open Gallery')
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 24,
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        var image =
+                            await (picker.getImage(source: ImageSource.camera)
+                                as FutureOr<PickedFile>);
+                        var decodedImage = await decodeImageFromList(
+                            File(image.path).readAsBytesSync());
+
+                        setState(() {
+                          height = decodedImage.height;
+                          width = decodedImage.width;
+                          _image = File(image.path);
+                        });
+                        setState(() => _controller.clear());
+                        Navigator.pop(context);
+                      },
+                      child: Column(
+                        children: [
+                          Icon(Icons.camera_alt),
+                          SizedBox(width: 10),
+                          Text('Open Camera'),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
         );
       },
     );
@@ -749,8 +896,8 @@ class _SignatState extends State<Signat> {
 
   @override
   Widget build(BuildContext context) {
-    return xListView.list(
-      [
+    return ListView(
+      children: [
         Signature(
             controller: _controller,
             height: height.toDouble(),
@@ -761,17 +908,21 @@ class _SignatState extends State<Signat> {
   }
 }
 
-Widget imageFilterLatest({brightness, saturation, hue, child}) {
+Widget imageFilterLatest(
+    {required brightness, required saturation, required hue, child}) {
   return ColorFiltered(
-      colorFilter: ColorFilter.matrix(ColorFilterGenerator.brightnessAdjustMatrix(
+      colorFilter:
+          ColorFilter.matrix(ColorFilterGenerator.brightnessAdjustMatrix(
         value: brightness,
       )),
       child: ColorFiltered(
-          colorFilter: ColorFilter.matrix(ColorFilterGenerator.saturationAdjustMatrix(
+          colorFilter:
+              ColorFilter.matrix(ColorFilterGenerator.saturationAdjustMatrix(
             value: saturation,
           )),
           child: ColorFiltered(
-            colorFilter: ColorFilter.matrix(ColorFilterGenerator.hueAdjustMatrix(
+            colorFilter:
+                ColorFilter.matrix(ColorFilterGenerator.hueAdjustMatrix(
               value: hue,
             )),
             child: child,
